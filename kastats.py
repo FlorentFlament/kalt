@@ -31,9 +31,17 @@ def dict_fetch(initial_dict, deep_key):
     except:
         return None
 
-def count_by(events, keys_l):
+def count_by(events, keys_l, select_l):
     result = {}
     for ev in events:
+        skip = False
+        for sel in select_l:
+            k,v = sel.split("=")
+            if dict_fetch(ev, k) != v:
+                skip = True
+                break
+        if skip:
+            continue
         comp_key = []
         for k in keys_l:
             comp_key.append(dict_fetch(ev, k))
@@ -41,14 +49,16 @@ def count_by(events, keys_l):
         result[comp_key] = result.get(comp_key, 0) + 1
     return result
             
-def display(results, keys_t):
+def display(results, keys_t, limit):
     # results is a dictionary, where keys are tuples of values
     # corresponding to keys_l, and values counts of corresponding
     # events
     total_cnt = sum(results.values())
     headers = keys_t + ("count", "percent")
     table = []
-    for k,v in sorted(results.items(), key=lambda x:x[1], reverse=True):
+    if limit == 0:
+        limit = len(results)
+    for k,v in sorted(results.items(), key=lambda x:x[1], reverse=True)[:limit]:
         percent = f"{v/total_cnt*100:.2f}"
         table.append(k + (v,percent)) # concatenate value to key tuple
     print(tabulate(table, headers=headers))
@@ -56,12 +66,14 @@ def display(results, keys_t):
 
 @click.command()
 @click.argument('filename')
-@click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Default to ["verb"].')
-def main(filename, keys):
+@click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Defaults to ["verb"].')
+@click.option('--select', '-s', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --select "objectRef.resource=secrets" --select "verb=get", Defaults to [].')
+@click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
+def main(filename, keys, select, limit):
     """Processes and displays statistics about FILENAME audit logs file."""
     events = parse_logs(filename)
-    result = count_by(events, keys)
-    display(result, keys)
+    result = count_by(events, keys, select)
+    display(result, keys, limit)
 
 if __name__ == "__main__":
     main()

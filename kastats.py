@@ -76,7 +76,8 @@ def display_stats(results, keys_t, limit):
     print(f"\nTotal events count: {total_cnt}")
 
 def dump_ev(events, limit):
-    for ev in itertools.islice(events, 0, limit):
+    subset = events if limit == 0 else itertools.islice(events, 0, limit)
+    for ev in subset:
         print(json.dumps(ev))
 
 @click.command()

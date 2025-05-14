@@ -37,10 +37,16 @@ def filter_by(events, filter_l):
     for ev in events:
         skip = False
         for ft in filter_l:
-            k,v = ft.split("=")
-            if dict_fetch(ev, k) != v:
-                skip = True
-                break
+            if '!=' in ft:
+                k,v = ft.split('!=')
+                if dict_fetch(ev, k) == v:
+                    skip = True
+                    break
+            else: # Assuming we have an '='
+                k,v = ft.split("=")
+                if dict_fetch(ev, k) != v:
+                    skip = True
+                    break
         if not skip:
             yield ev
 

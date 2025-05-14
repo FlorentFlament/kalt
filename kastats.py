@@ -13,8 +13,12 @@ from tabulate import tabulate
 
 # Some interesting keys to use with the --keys command line option:
 # - user.username
+# - user.groups
 # - objectRef.resource
 # - verb
+#
+# Filters (--filters) can filter events based on scalars (like
+# user.username) of lists (like user.groups).
 
 def parse_logs(fname):
     events = []
@@ -34,10 +38,28 @@ def dict_fetch(initial_dict, deep_key):
         return None
 
 def filter_by(events, filter_l):
+    """
+    filter_l is a list of filter strings.
+    Each string has the form:
+    - key=value : keeps events for which the key is equal to value
+    - key!=value : keeps events for which the key is different than value
+    - key+value : keeps events for which the key is a list and value is in it
+    - key-value : keeps events for which the key is a list and value is not in it
+    """
     for ev in events:
         skip = False
         for ft in filter_l:
-            if '!=' in ft:
+            if '+=' in ft:
+                k,v = ft.split('+=')
+                if v not in dict_fetch(ev, k):
+                    skip = True
+                    break
+            elif '-=' in ft:
+                k,v = ft.split('-=')
+                if v in dict_fetch(ev, k):
+                    skip = True
+                    break
+            elif '!=' in ft:
                 k,v = ft.split('!=')
                 if dict_fetch(ev, k) == v:
                     skip = True

@@ -18,9 +18,10 @@ from tabulate import tabulate
 def parse_logs(fname):
     events = []
     with open(fname) as fd:
-        for line in fd.readlines():
-            events.append(json.loads(line))
-    return events
+        line = fd.readline()
+        while line:
+            yield json.loads(line)
+            line = fd.readline()
 
 def dict_fetch(initial_dict, deep_key):
     h = initial_dict
@@ -31,17 +32,20 @@ def dict_fetch(initial_dict, deep_key):
     except:
         return None
 
-def count_by(events, keys_l, select_l):
-    result = {}
+def filter_by(events, filter_l):
     for ev in events:
         skip = False
-        for sel in select_l:
-            k,v = sel.split("=")
+        for ft in filter_l:
+            k,v = ft.split("=")
             if dict_fetch(ev, k) != v:
                 skip = True
                 break
-        if skip:
-            continue
+        if not skip:
+            yield ev
+
+def count_by(events, keys_l):
+    result = {}
+    for ev in events:
         comp_key = []
         for k in keys_l:
             comp_key.append(dict_fetch(ev, k))
@@ -67,12 +71,12 @@ def display(results, keys_t, limit):
 @click.command()
 @click.argument('filename')
 @click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Defaults to ["verb"].')
-@click.option('--select', '-s', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --select "objectRef.resource=secrets" --select "verb=get", Defaults to [].')
+@click.option('--filters', '-s', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --select "objectRef.resource=secrets" --select "verb=get", Defaults to [].')
 @click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
-def main(filename, keys, select, limit):
+def main(filename, keys, filters, limit):
     """Processes and displays statistics about FILENAME audit logs file."""
-    events = parse_logs(filename)
-    result = count_by(events, keys, select)
+    events = filter_by(parse_logs(filename), filters)
+    result = count_by(events, keys)
     display(result, keys, limit)
 
 if __name__ == "__main__":

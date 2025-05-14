@@ -6,6 +6,7 @@
 
 import sys
 import json
+import itertools
 
 import click
 from tabulate import tabulate
@@ -53,7 +54,7 @@ def count_by(events, keys_l):
         result[comp_key] = result.get(comp_key, 0) + 1
     return result
             
-def display(results, keys_t, limit):
+def display_stats(results, keys_t, limit):
     # results is a dictionary, where keys are tuples of values
     # corresponding to keys_l, and values counts of corresponding
     # events
@@ -68,16 +69,24 @@ def display(results, keys_t, limit):
     print(tabulate(table, headers=headers))
     print(f"\nTotal events count: {total_cnt}")
 
+def dump_ev(events, limit):
+    for ev in itertools.islice(events, 0, limit):
+        print(json.dumps(ev))
+
 @click.command()
 @click.argument('filename')
 @click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Defaults to ["verb"].')
-@click.option('--filters', '-s', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --select "objectRef.resource=secrets" --select "verb=get", Defaults to [].')
+@click.option('--filters', '-f', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --filter "objectRef.resource=secrets" --filter "verb=get", Defaults to [].')
 @click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
-def main(filename, keys, filters, limit):
+@click.option('--dump', '-d', is_flag=True, help='Dump events rather than statistics.')
+def main(filename, keys, filters, limit, dump):
     """Processes and displays statistics about FILENAME audit logs file."""
     events = filter_by(parse_logs(filename), filters)
-    result = count_by(events, keys)
-    display(result, keys, limit)
+
+    if dump:
+        dump_ev(events, limit)
+    else:
+        display_stats(count_by(events, keys), keys, limit)
 
 if __name__ == "__main__":
     main()

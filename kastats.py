@@ -37,40 +37,35 @@ def dict_fetch(initial_dict, deep_key):
     except:
         return None
 
-def filter_by(events, filter_l):
+def filter_by(events, filters_sl):
     """
-    filter_l is a list of filter strings.
+    filter_sl is a list of filter strings.
     Each string has the form:
     - key=value : keeps events for which the key is equal to value
     - key!=value : keeps events for which the key is different than value
     - key+value : keeps events for which the key is a list and value is in it
     - key-value : keeps events for which the key is a list and value is not in it
     """
-    for ev in events:
-        skip = False
-        for ft in filter_l:
-            if '+=' in ft:
-                k,v = ft.split('+=')
-                if v not in dict_fetch(ev, k):
-                    skip = True
-                    break
-            elif '-=' in ft:
-                k,v = ft.split('-=')
-                if v in dict_fetch(ev, k):
-                    skip = True
-                    break
-            elif '!=' in ft:
-                k,v = ft.split('!=')
-                if dict_fetch(ev, k) == v:
-                    skip = True
-                    break
-            else: # Assuming we have an '='
-                k,v = ft.split("=")
-                if dict_fetch(ev, k) != v:
-                    skip = True
-                    break
-        if not skip:
-            yield ev
+    def build_filter(fts):
+        if '+=' in fts:
+            k,v = fts.split('+=')
+            return lambda x:v in dict_fetch(x, k)
+        elif '-=' in fts:
+            k,v = fts.split('-=')
+            return lambda x:v not in dict_fetch(x, k)
+        elif '!=' in fts:
+            k,v = fts.split('!=')
+            return lambda x:v != dict_fetch(x, k)
+        elif '=' in fts:
+            k,v = fts.split("=")
+            return lambda x:v == dict_fetch(x, k)
+        else:
+            raise(Exception(f"Operator not found in filter string: {fts}"))
+
+    # Build compound filter
+    for fts in filters_sl:
+        events = filter(build_filter(fts), events)
+    return events
 
 def count_by(events, keys_l):
     result = {}
@@ -81,7 +76,7 @@ def count_by(events, keys_l):
         comp_key = tuple(comp_key)
         result[comp_key] = result.get(comp_key, 0) + 1
     return result
-            
+
 def display_stats(results, keys_t, limit):
     # results is a dictionary, where keys are tuples of values
     # corresponding to keys_l, and values counts of corresponding

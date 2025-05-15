@@ -4,9 +4,9 @@
 # - tabulate
 # - click
 
-import sys
 import json
 import itertools
+import datetime
 
 import click
 from tabulate import tabulate
@@ -20,13 +20,26 @@ from tabulate import tabulate
 # - objectRef.resource
 # - verb
 
+# Keep track of a few stats globally (could be moved to some class at
+# some point)
+datetime_first = None
+datetime_last = None
+events_count = 0
+
+def parse_event_timestamp(ev):
+    return datetime.datetime.strptime(ev["stageTimestamp"], "%Y-%m-%dT%H:%M:%S.%f%z")
+
 def parse_logs(fname):
-    events = []
+    global datetime_first, datetime_last, events_count
     with open(fname) as fd:
         line = fd.readline()
+        datetime_first = parse_event_timestamp(json.loads(line))
         while line:
-            yield json.loads(line)
+            events_count+= 1
+            ev = json.loads(line)
+            yield ev
             line = fd.readline()
+        datetime_last = parse_event_timestamp(ev)
 
 def dict_fetch(initial_dict, deep_key):
     h = initial_dict
@@ -81,16 +94,23 @@ def display_stats(results, keys_t, limit):
     # results is a dictionary, where keys are tuples of values
     # corresponding to keys_l, and values counts of corresponding
     # events
-    total_cnt = sum(results.values())
+    cnt = sum(results.values())
     headers = keys_t + ("count", "percent")
     table = []
     if limit == 0:
         limit = len(results)
     for k,v in sorted(results.items(), key=lambda x:x[1], reverse=True)[:limit]:
-        percent = f"{v/total_cnt*100:.2f}"
+        percent = f"{v/cnt*100:.2f}"
         table.append(k + (v,percent)) # concatenate value to key tuple
+
+    def hdt(dt):
+        return datetime.datetime.strftime(dt, "%Y-%m-%d %H:%M:%S")
+
+    # Displaying using a few globals
     print(tabulate(table, headers=headers))
-    print(f"\nTotal events count: {total_cnt}")
+    print(f"\nEvents count: {cnt} ({cnt*100/events_count:.2f}% of {events_count} events)")
+    period = datetime_last - datetime_first
+    print(f"Period: {period.seconds/3600:.2f} hours from {hdt(datetime_first)} to {hdt(datetime_last)}")
 
 def dump_ev(events, limit):
     subset = events if limit == 0 else itertools.islice(events, 0, limit)

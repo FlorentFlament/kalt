@@ -11,14 +11,14 @@ import itertools
 import click
 from tabulate import tabulate
 
-# Some interesting keys to use with the --keys command line option:
+# Filters (--filters) can filter events based on scalars (like
+# user.username) of lists (like user.groups).
+#
+# Some interesting keys to use with the --filters command line option:
 # - user.username
 # - user.groups
 # - objectRef.resource
 # - verb
-#
-# Filters (--filters) can filter events based on scalars (like
-# user.username) of lists (like user.groups).
 
 def parse_logs(fname):
     events = []
@@ -39,12 +39,12 @@ def dict_fetch(initial_dict, deep_key):
 
 def filter_by(events, filters_sl):
     """
-    filter_sl is a list of filter strings.
+    filters_sl is a list of filter strings.
     Each string has the form:
-    - key=value : keeps events for which the key is equal to value
-    - key!=value : keeps events for which the key is different than value
-    - key+value : keeps events for which the key is a list and value is in it
-    - key-value : keeps events for which the key is a list and value is not in it
+    - key=value : keeps events for which the event[key] is equal to value
+    - key!=value : keeps events for which the event[key] is different than value
+    - key+value : keeps events for which the event[key] is a list and value is in it
+    - key-value : keeps events for which the event[key] is a list and value is not in it
     """
     def build_filter(fts):
         if '+=' in fts:
@@ -102,7 +102,7 @@ def dump_ev(events, limit):
 @click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Defaults to ["verb"].')
 @click.option('--filters', '-f', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --filter "objectRef.resource=secrets" --filter "verb=get", Defaults to [].')
 @click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
-@click.option('--dump', '-d', is_flag=True, help='Dump events rather than statistics.')
+@click.option('--dump', '-d', is_flag=True, help='Dump events rather than displaying statistics.')
 def main(filename, keys, filters, limit, dump):
     """Processes and displays statistics about FILENAME audit logs file."""
     events = filter_by(parse_logs(filename), filters)

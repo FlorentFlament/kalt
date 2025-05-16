@@ -90,6 +90,13 @@ def count_by(events, keys_l):
         result[comp_key] = result.get(comp_key, 0) + 1
     return result
 
+def count_by_group(events):
+    result = {}
+    for ev in events:
+        for grp in dict_fetch(ev, "user.groups"):
+            result[(grp,)] = result.get((grp,), 0) + 1
+    return result
+
 def display_stats(results, keys_t, limit):
     # results is a dictionary, where keys are tuples of values
     # corresponding to keys_l, and values counts of corresponding
@@ -123,12 +130,15 @@ def dump_ev(events, limit):
 @click.option('--filters', '-f', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --filter "objectRef.resource=secrets" --filter "verb=get", Defaults to [].')
 @click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
 @click.option('--dump', '-d', is_flag=True, help='Dump events rather than displaying statistics.')
-def main(filename, keys, filters, limit, dump):
+@click.option('--groups', '-g', is_flag=True, help='Group by user.groups.')
+def main(filename, keys, filters, limit, dump, groups):
     """Processes and displays statistics about FILENAME audit logs file."""
     events = filter_by(parse_logs(filename), filters)
 
     if dump:
         dump_ev(events, limit)
+    elif groups:
+        display_stats(count_by_group(events), ("user.groups",), limit)
     else:
         display_stats(count_by(events, keys), keys, limit)
 

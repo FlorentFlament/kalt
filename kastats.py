@@ -29,17 +29,24 @@ events_count = 0
 def parse_event_timestamp(ev):
     return datetime.datetime.strptime(ev["stageTimestamp"], "%Y-%m-%dT%H:%M:%S.%f%z")
 
-def parse_logs(fname):
+def get_lines(filenames):
+    """Yield lines of multiple files sequentially."""
+    for fn in filenames:
+        with open(fn) as fd:
+            ln = fd.readline()
+            while ln:
+                yield ln
+                ln = fd.readline()
+
+def parse_logs(lines):
     global datetime_first, datetime_last, events_count
-    with open(fname) as fd:
-        line = fd.readline()
-        datetime_first = parse_event_timestamp(json.loads(line))
-        while line:
-            events_count+= 1
-            ev = json.loads(line)
-            yield ev
-            line = fd.readline()
-        datetime_last = parse_event_timestamp(ev)
+    line = next(lines)
+    datetime_first = parse_event_timestamp(json.loads(line))
+    for line in lines:
+        events_count+= 1
+        ev = json.loads(line)
+        yield ev
+    datetime_last = parse_event_timestamp(ev)
 
 def dict_fetch(initial_dict, deep_key):
     h = initial_dict
@@ -125,15 +132,15 @@ def dump_ev(events, limit):
         print(json.dumps(ev))
 
 @click.command()
-@click.argument('filename')
+@click.argument('filenames', nargs=-1, required=True)
 @click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Defaults to ["verb"].')
 @click.option('--filters', '-f', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --filter "objectRef.resource=secrets" --filter "verb=get", Defaults to [].')
 @click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
 @click.option('--dump', '-d', is_flag=True, help='Dump events rather than displaying statistics.')
 @click.option('--groups', '-g', is_flag=True, help='Group by user.groups.')
-def main(filename, keys, filters, limit, dump, groups):
-    """Processes and displays statistics about FILENAME audit logs file."""
-    events = filter_by(parse_logs(filename), filters)
+def main(filenames, keys, filters, limit, dump, groups):
+    """Processes and displays statistics about FILENAMES audit log files."""
+    events = filter_by(parse_logs(get_lines(filenames)), filters)
 
     if dump:
         dump_ev(events, limit)

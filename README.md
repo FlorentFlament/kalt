@@ -1,16 +1,18 @@
 KALT stands for Kubernetes Audit Logs Toolkit
 
-The aim is to write a few scripts to analyse existing `audit.log`
-files to help writing meaningful `audit_policy.yml` focusing on useful
-Kubernetes events.
+A tool to analyse existing `audit.log` files, possibly helping to
+write meaningful `audit_policy.yml`.
 
-- kastats.py displays occurence statistics, grouped by provided keys,
-  possibly filtering the output. See `kastats.py --help`.
-
-Example:
+# Install
 
 ```
-$ kastats -f 'objectRef.resource!=leases' -k user.username -k verb -k objectRef.resource -l 10 audit-*
+$ pip install pykalt
+```
+
+# Usage
+
+```
+$ kalt -f 'objectRef.resource!=leases' -k user.username -k verb -k objectRef.resource -l 10 audit-*
 user.username                                                verb    objectRef.resource      count    percent
 -----------------------------------------------------------  ------  --------------------  -------  ---------
 ncp                                                          update  nsxlocks                 8395      13.77

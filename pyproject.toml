@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pykalt"
+version = "1.0"
+authors = [
+  { name="Florent Flament", email="contact@florentflament.com" },
+]
+
+description = "KALT is a Kubernetes Audit Logs Toolkit. It alows analyzing Kubernetes audit.log files."
+
+readme = "README.md"
+requires-python = ">=3"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: POSIX :: Linux",
+]
+
+dependencies = ["tabulate", "click"]
+keywords = ["Kubernetes", "k8s", "audit", "log", "audit.log"]
+
+[project.urls]
+Homepage = "https://github.com/FlorentFlament/kalt"
+Issues = "https://github.com/FlorentFlament/kalt/issues"
+
+[project.scripts]
+kalt = "pykalt:kalt.main"

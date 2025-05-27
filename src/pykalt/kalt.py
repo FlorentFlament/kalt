@@ -63,6 +63,8 @@ def filter_by(events, filters_sl):
     Each string has the form:
     - key=value : keeps events for which the event[key] is equal to value
     - key!=value : keeps events for which the event[key] is different than value
+    - key>=value : keeps events for which the event[key] is greater or equal than value (i.e for datetimes)
+    - key<=value : keeps events for which the event[key] is lesser or equal than value
     - key+value : keeps events for which the event[key] is a list and value is in it
     - key-value : keeps events for which the event[key] is a list and value is not in it
     """
@@ -73,6 +75,14 @@ def filter_by(events, filters_sl):
         elif '-=' in fts:
             k,v = fts.split('-=')
             return lambda x:v not in dict_fetch(x, k)
+        elif '>=' in fts:
+            k,v = fts.split(">=")
+            # exemple: stageTimestamp>=2025-05-27
+            # v = 2025-05-27
+            return lambda x:dict_fetch(x, k) >= v
+        elif '<=' in fts:
+            k,v = fts.split("<=")
+            return lambda x:dict_fetch(x, k) <= v
         elif '!=' in fts:
             k,v = fts.split('!=')
             return lambda x:v != dict_fetch(x, k)

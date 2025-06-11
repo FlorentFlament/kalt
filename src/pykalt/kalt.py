@@ -134,7 +134,8 @@ def display_stats(results, keys_t, limit):
     print(tabulate(table, headers=headers))
     print(f"\nEvents count: {cnt} ({cnt*100/events_count:.2f}% of {events_count} events)")
     period = datetime_last - datetime_first
-    print(f"Period: {period.seconds/3600:.2f} hours from {hdt(datetime_first)} to {hdt(datetime_last)}")
+    print(f"Period: {period.days} days, {period.seconds/3600:.0f} hours and {(period.seconds%3600)/60:.0f} mins;"
+          + f" from \"{hdt(datetime_first)}\" to \"{hdt(datetime_last)}\"")
 
 def dump_ev(events, limit):
     subset = events if limit == 0 else itertools.islice(events, 0, limit)

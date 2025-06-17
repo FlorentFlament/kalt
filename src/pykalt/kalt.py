@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 
-# Requires the following packages:
-# - tabulate
-# - click
-
-import json
-import itertools
 import datetime
+import importlib.metadata # To get the package version
+import itertools
+import json
 
 import click
 from tabulate import tabulate
@@ -144,17 +141,23 @@ def dump_ev(events, limit):
         print(json.dumps(ev))
 
 @click.command()
-@click.argument('filenames', nargs=-1, required=True)
+@click.argument('filenames', nargs=-1, required=False)
 @click.option('--keys', '-k', multiple=True, default=["verb"], help='List of keys to count against. Can be used multiple times. Defaults to ["verb"].')
 @click.option('--filters', '-f', multiple=True, default=[], help='List of key=value used to select a subset of audit logs. Can be used multiple times. Example: --filter "objectRef.resource=secrets" --filter "verb=get", the operator must be in [\'=\',\'!=\',\'>=\',\'<=\',\'+=\',\'-=\']. Defaults to [].')
 @click.option('--limit', '-l', default=0, help='Limit the output to the nth biggest results. Example: --limit 10. Defaults to 0, meaning no limit.')
 @click.option('--dump', '-d', is_flag=True, help='Dump events rather than displaying statistics.')
 @click.option('--groups', '-g', is_flag=True, help='Group by user.groups.')
-def main(filenames, keys, filters, limit, dump, groups):
+@click.option('--version', '-v', is_flag=True, help='Display version and exit.')
+def main(filenames, keys, filters, limit, dump, groups, version):
     """Processes and displays statistics about FILENAMES audit log files."""
     events = filter_by(parse_logs(get_lines(filenames)), filters)
 
-    if dump:
+    if version:
+        print(f"kalt version: {importlib.metadata.version('pykalt')}")
+    elif len(filenames) == 0:
+        print("Error: FILENAMES are missing (use --help for usage).")
+        exit(1)
+    elif dump:
         dump_ev(events, limit)
     elif groups:
         display_stats(count_by_group(events), ("user.groups",), limit)

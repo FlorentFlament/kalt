@@ -55,7 +55,8 @@ def dict_fetch(initial_dict, deep_key):
             h = h[k]
         return h
     except:
-        return None
+        # A value equal to '' will be treated as a missing value
+        return '' # Allows filtering on a missing value
 
 def filter_by(events, filters_sl):
     """
